@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "autoname": "PAYOUT BANK API-REQ-.MM.-.YY.-.#####",
+ "creation": "2023-04-13 14:53:29.986411",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "api_method",
+  "config_details",
+  "response",
+  "column_break_7",
+  "timestamp",
+  "accepted_document",
+  "rejected_document",
+  "file_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "api_method",
+   "fieldtype": "Data",
+   "label": "API Method"
+  },
+  {
+   "fieldname": "config_details",
+   "fieldtype": "Text",
+   "label": "Config Details",
+   "read_only": 1
+  },
+  {
+   "fieldname": "response",
+   "fieldtype": "Small Text",
+   "label": "Response",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Now",
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "label": "Timestamp"
+  },
+  {
+   "fieldname": "accepted_document",
+   "fieldtype": "Text",
+   "label": "Accepted Document"
+  },
+  {
+   "fieldname": "rejected_document",
+   "fieldtype": "Text",
+   "label": "Rejected Document"
+  },
+  {
+   "fieldname": "file_name",
+   "fieldtype": "Small Text",
+   "label": "File Name"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-04-13 14:53:29.986411",
+ "modified_by": "Administrator",
+ "module": "Bank Api Integration",
+ "name": "Payout Bank API Request Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

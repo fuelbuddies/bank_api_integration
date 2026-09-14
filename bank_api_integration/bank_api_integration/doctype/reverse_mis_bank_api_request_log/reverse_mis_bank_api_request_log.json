@@ -1,0 +1,132 @@
+{
+ "actions": [],
+ "autoname": "Reverse MIS BANK API-REQ-.#####",
+ "creation": "2023-03-31 16:02:57.953204",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "response",
+  "column_break_7",
+  "timestamp",
+  "pay_date",
+  "party_type",
+  "party",
+  "party_account_number",
+  "party_bank_account",
+  "party_bank",
+  "company_account_number",
+  "outward_bank_payment",
+  "cms_no",
+  "status",
+  "over_all_response"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "response",
+   "fieldtype": "Code",
+   "label": "Response",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Now",
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "label": "Timestamp"
+  },
+  {
+   "fieldname": "party_type",
+   "fieldtype": "Link",
+   "label": "Party Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "label": "Party",
+   "options": "party_type"
+  },
+  {
+   "fieldname": "party_account_number",
+   "fieldtype": "Data",
+   "label": "Party Account Number"
+  },
+  {
+   "fieldname": "party_bank_account",
+   "fieldtype": "Link",
+   "label": "Party Bank Account",
+   "options": "Bank Account"
+  },
+  {
+   "fieldname": "party_bank",
+   "fieldtype": "Link",
+   "label": "Party Bank",
+   "options": "Bank"
+  },
+  {
+   "fieldname": "company_account_number",
+   "fieldtype": "Data",
+   "label": "Company Account Number"
+  },
+  {
+   "fieldname": "outward_bank_payment",
+   "fieldtype": "Link",
+   "label": "Outward Bank Payment",
+   "options": "Outward Bank Payment"
+  },
+  {
+   "fieldname": "cms_no",
+   "fieldtype": "Data",
+   "label": "CMS No"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status"
+  },
+  {
+   "fieldname": "over_all_response",
+   "fieldtype": "Small Text",
+   "label": "Over All Response"
+  },
+  {
+   "fieldname": "pay_date",
+   "fieldtype": "Date",
+   "label": "Pay Date"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-09-13 15:41:12.731156",
+ "modified_by": "Administrator",
+ "module": "Bank Api Integration",
+ "name": "Reverse MIS Bank API Request Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

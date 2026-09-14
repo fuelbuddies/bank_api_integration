@@ -365,3 +365,8 @@ var show_dialog = function(frm, dialog_fields){
 	});
 	d.show();
 }
+
+
+
+
+

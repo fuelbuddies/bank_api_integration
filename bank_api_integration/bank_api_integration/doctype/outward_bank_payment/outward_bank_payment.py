@@ -13,19 +13,43 @@ from erpnext.controllers.accounts_controller import get_supplier_block_status
 from erpnext.accounts.utils import get_outstanding_invoices, get_account_currency
 from frappe.utils import add_months, nowdate
 from bank_api_integration.bank_api_integration.doctype.bank_api_integration.bank_api_integration import is_authorized
+from erpnext.accounts.party import get_party_account
+from urllib.parse import urlparse
+
 class OutwardBankPayment(Document):
 	def validate(self):
 		final_remark=""
-		symbols=[',','.','/','-']
+	#	symbols=[',','.','/','-']
 		for i in self.remarks:
-			if(i not in symbols):
+			if (ord(i) >= 65 and ord(i) <= 90) or (ord(i) >= 97 and ord(i) <= 122) or (ord(i) >= 48 and ord(i) <= 57):
 				final_remark+=i
 		if len(final_remark)>25:
-			final_remark=final_remark[0:25]
-		self.remarks=final_remark
+			final_remark = final_remark[0:25]
+		self.remarks = final_remark
 	def on_update(self):
 		is_authorized(self)
 	def on_change(self):
+		parsed_url = urlparse(frappe.utils.get_url())
+		site_name = parsed_url.netloc
+		doc = self.get_doc_before_save()
+		if "desk.lnder.in" == site_name and self.workflow_state == "Transaction Completed" and not doc.workflow_state == "Transaction Completed":
+			if self.payment_references:
+				for row in self.payment_references:
+					if row.reference_doctype == "Payment Order Detail" and row.reference_name:
+						previous_paid_amt = frappe.db.get_value("Payment Order Detail",{"name":row.reference_name},"paid_amount")
+						frappe.db.sql("""Update `tabPayment Order Detail` set paid_amount = {0},paid_doc_ref = '{2}' where name = '{1}'
+                    					""".format((previous_paid_amt+row.allocated_amount),row.reference_name,self.name))
+		if "gta.lnder.in" == site_name and self.workflow_state == "Pending" and self.owner != "Administrator":
+			user_list = frappe.db.sql("""Select c.company from `tabCompany Wise User` as c join `tabCompany Wise User Table` as ct on ct.parent = c.name where c.company != '{0}' and ct.user = '{1}' """.format(self.company,self.owner),as_dict = True)
+			if user_list:
+				credit_limit = frappe.db.get_value("Company",{"name":user_list[0].company},"credit_balance")
+				credit_limit -= self.amount
+				frappe.db.sql("""Update `tabCompany` set credit_balance = '{0}' where name = '{1}' """.format(credit_limit,user_list[0].company))
+
+		if "gta.lnder.in" == site_name and self.workflow_state == "Pending" and self.party_type == "Supplier":
+			if frappe.db.get_value("Supplier",{"name":self.party},"whatsapp_no"):
+				self.mobile_no = "91"+frappe.db.get_value("Supplier",{"name":self.party},"whatsapp_no")
+
 		if self.bobp and not self.workflow_state == 'Pending':
 			status = 'Processing'
 			failed_doc_count = frappe.db.count('Outward Bank Payment', {'bobp': self.bobp, 'workflow_state': ['in',  ['Initiation Failed','Initiation Error', 'Transaction Error', 'Transaction Failed']]})
@@ -39,7 +63,7 @@ class OutwardBankPayment(Document):
 			if completed_doc_count>=1:
 				status = 'Partially Completed'
 			if completed_doc_count == total_payments:
-				status = 'Completed' 
+				status = 'Completed'
 			frappe.db.set_value('Bulk Outward Bank Payment', {'name': self.bobp}, 'workflow_state', status)
 			frappe.db.set_value('Outward Bank Payment Details',{'parent':self.bobp,
 							'party_type': self.party_type,
@@ -47,7 +71,7 @@ class OutwardBankPayment(Document):
 							'amount': self.amount,
 							'outward_bank_payment': self.name},'status', self.workflow_state)
 			frappe.db.commit()
-		if self.reconcile_action == 'Auto Reconcile Oldest First Invoice' and self.workflow_state == 'Transaction Completed':
+		if self.reconcile_action == 'Auto Reconcile Oldest First Invoice' and self.workflow_state == 'Transaction Completed' and not doc.workflow_state == "Transaction Completed":
 			references = []
 			amount = self.amount
 			month_threshold = -6
@@ -64,20 +88,53 @@ class OutwardBankPayment(Document):
 					})
 					amount-= inv['grand_total']
 			self.create_payment_entry(references)
-		if self.reconcile_action == 'Manual Reconcile' and self.workflow_state == 'Transaction Completed':
-			references = []
+		if self.reconcile_action == 'Manual Reconcile' and self.workflow_state == 'Transaction Completed' and not doc.workflow_state == "Transaction Completed":
+			purchase_invoice_references = []
+			payment_order_detail_references = []
 			for row in self.payment_references:
-				references.append({
-				'reference_doctype': row.reference_doctype,
-				'reference_name': row.reference_name,
-				'bill_no': row.bill_no,
-				'due_date': row.due_date,
-				'total_amount': row.total_amount,
-				'outstanding_amount': row.outstanding_amount,
-				'allocated_amount': row.allocated_amount,
-				'exchange_rate': row.exchange_rate
-				})
-			self.create_payment_entry(references)
+				if row.reference_doctype == "Purchase Invoice" and row.reference_name:
+					purchase_invoice_references.append({
+						'reference_doctype': row.reference_doctype,
+						'reference_name': row.reference_name,
+						'bill_no': row.bill_no,
+						'due_date': row.due_date,
+						'total_amount': row.total_amount,
+						'outstanding_amount': row.outstanding_amount,
+						'allocated_amount': row.allocated_amount,
+						'exchange_rate': row.exchange_rate
+					})
+				if row.reference_doctype == "Payment Order Detail" and row.reference_name:
+					payment_order_detail_references.append({
+						'reference_doctype': row.reference_doctype,
+						'reference_name': row.reference_name,
+						'total_amount': row.total_amount,
+						'outstanding_amount': row.outstanding_amount,
+						'allocated_amount': row.allocated_amount,
+					})
+			if purchase_invoice_references:
+				references = purchase_invoice_references
+				self.create_payment_entry(references)
+			if payment_order_detail_references:
+				references = payment_order_detail_references
+				self.create_payment_order_detail_journal(references)
+
+		if self.reconcile_action == 'Skip Reconcile' and self.workflow_state == 'Transaction Completed':
+			payment_order_detail_references = []
+			for row in self.payment_references:
+				if row.reference_doctype == "Payment Order Detail" and row.reference_name:
+					payment_order_detail_references.append({
+						'reference_doctype': row.reference_doctype,
+						'reference_name': row.reference_name,
+						'total_amount': row.total_amount,
+						'outstanding_amount': row.outstanding_amount,
+						'allocated_amount': row.allocated_amount,
+					})
+			if payment_order_detail_references:
+				references = payment_order_detail_references
+				self.create_payment_order_detail_journal(references)
+			else:
+				references = []
+				self.create_payment_entry(references)
 
 	def create_payment_entry(self, references):
 		account_paid_from = frappe.db.get_value("Bank Account", self.company_bank_account, "account")
@@ -97,24 +154,53 @@ class OutwardBankPayment(Document):
 			"target_exchange_rate": 1,
 			"paid_from": account_paid_from,
 			"paid_from_account_currency": account_currency,
-			"references": references
+			"references": references,
+			"is_deposit":self.is_deposit
 		}
 		payment_entry = frappe.new_doc("Payment Entry")
 		payment_entry.update(payment_entry_dict)
 
 		payment_entry.insert()
 		payment_entry.submit()
-		
+
 		frappe.db.set_value(self.doctype, self.name, "payment_entry", payment_entry.name)
 
+	@frappe.whitelist()
+	def create_payment_order_detail_journal(self,references):
+		account_paid_from = frappe.db.get_value("Bank Account", self.company_bank_account, "account")
+		accounts=[]
+		for row in references:
+			gta_service_allocation_details=frappe.db.get_value("Payment Order Detail",{'name':row.get('reference_name')},['super_customer'],as_dict=True)
+			default_party_recevieable_account=get_party_account('Customer',gta_service_allocation_details.get('customer'),self.company) or frappe.db.get_value("Company",self.company,"default_receivable_account")
+			accounts.append({
+				"account":account_paid_from,
+				"credit_in_account_currency":row.get('allocated_amount')
+			})
+			accounts.append({
+				"account": default_party_recevieable_account,
+				"party_type": "Customer",
+				"party": gta_service_allocation_details.get('super_customer'),
+				"debit_in_account_currency": row.get('allocated_amount')
+			})
+		if accounts:
+			je = frappe.new_doc("Journal Entry")
+			je.outward_bank_payment = self.name
+			je.posting_date = today()
+			je.cheque_no = self.utr_number
+			je.cheque_date = today()
+			je.extend("accounts",accounts)
+			je.user_remark = "Payment Order Detail - " + self.name
+			je.save(ignore_permissions = True)
+			je.submit()
 @frappe.whitelist()
 def make_bank_payment(source_name, target_doc=None):
-	supplier=frappe.db.get_value("Purchase Order",{"name":source_name},"supplier")
+	supplier=frappe.db.get_value("Purchase Invoice",{"name":source_name},"supplier")
 	if(frappe.db.get_value("Bank Account",{"party":supplier},"is_default")):
 		#Assigning party type as supplier
 		def set_supplier(source_doc,target_doc,source_parent):
 			target_doc.party_type="Supplier"
 			target_doc.reconcile_action="Manual Reconcile"
+			target_doc.remarks = source_doc.items[0].item_code
 			target_doc.append('payment_references',{
 				'reference_name': source_doc.name,
 				'reference_doctype': 'Purchase Invoice',
@@ -129,8 +215,8 @@ def make_bank_payment(source_name, target_doc=None):
 				"doctype": "Outward Bank Payment",
 				"field_map": {
 					"supplier": "party",
-					"name" : "remarks",
-					"outstanding_amount" : "amount" 
+					#"name" : "remarks",
+					"outstanding_amount" : "amount"
 				}
 				}
 
@@ -154,7 +240,7 @@ def bank_payment_for_purchase_order(source_name, target_doc=None):
 				"total_amount": source_doc.rounded_total,
 				"allocated_amount":source_doc.rounded_total
 			})
-		
+
 		from frappe.model.mapper import get_mapped_doc
 		doclist = get_mapped_doc("Purchase Order", source_name,{
 			"Purchase Order": {
@@ -163,7 +249,7 @@ def bank_payment_for_purchase_order(source_name, target_doc=None):
 				"field_map": {
 					"supplier": "party",
 					"name" : "remarks",
-					"grand_total" : "amount" 
+					"grand_total" : "amount"
 				}
 				}
 

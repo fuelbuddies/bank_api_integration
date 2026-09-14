@@ -25,6 +25,9 @@
   "payment_entry",
   "column_break_15",
   "utr_number",
+  "is_cib_api",
+  "is_bulk_payout_api",
+  "pay_date_bulk_payout",
   "reconcile_section",
   "get_outstanding_invoice",
   "payment_references",
@@ -125,6 +128,7 @@
    "fieldname": "transaction_type",
    "fieldtype": "Select",
    "label": "Transaction Type",
+   "options": "RTGS\nNEFT\nIMPS\nInternal Payments\nExternal Payments\nVirtual A/c Payments",
    "reqd": 1
   },
   {
@@ -148,6 +152,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "utr_number",
    "fieldtype": "Data",
    "label": "UTR Number",
@@ -184,12 +189,35 @@
    "label": "Is Verified",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "is_bulk_payout_api",
+   "fieldtype": "Check",
+   "label": "Is Bulk Payout API",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "is_cib_api",
+   "fieldtype": "Check",
+   "label": "Is CIB API",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "pay_date_bulk_payout",
+   "fieldtype": "Date",
+   "label": "Pay Date Bulk Payout",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2021-05-29 17:23:46.094297",
+ "modified": "2023-09-27 11:02:32.332826",
  "modified_by": "Administrator",
  "module": "Bank Api Integration",
  "name": "Outward Bank Payment",

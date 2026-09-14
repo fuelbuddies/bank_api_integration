@@ -26,7 +26,10 @@
   "enable_transaction",
   "column_break_20",
   "enable_password_security",
-  "transaction_password"
+  "transaction_password",
+  "on_process",
+  "completed",
+  "pending"
  ],
  "fields": [
   {
@@ -164,11 +167,29 @@
    "fieldtype": "Attach",
    "label": "ICICI Public Key",
    "mandatory_depends_on": "eval:in_list([\"ICICI\"], doc.bank_api_provider)"
+  },
+  {
+   "default": "0",
+   "fieldname": "on_process",
+   "fieldtype": "Check",
+   "label": "On Process"
+  },
+  {
+   "fieldname": "completed",
+   "fieldtype": "Data",
+   "label": "Completed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending",
+   "fieldtype": "Data",
+   "label": "Pending",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-06-16 14:43:02.234132",
+ "modified": "2023-04-17 13:13:51.012575",
  "modified_by": "Administrator",
  "module": "Bank Api Integration",
  "name": "Bank API Integration",

@@ -3,8 +3,15 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 class BankAPIRequestLog(Document):
 	pass
+
+def delete_older_logs():
+	frappe.db.sql(
+			""" DELETE FROM `tabBank API Request Log`
+			WHERE `creation` < (NOW() - INTERVAL '90' DAY)
+		"""
+		)

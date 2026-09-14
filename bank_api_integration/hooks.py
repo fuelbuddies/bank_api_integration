@@ -60,7 +60,7 @@ app_license = "MIT"
 
 # before_install = "bank_api_integration.install.before_install"
 after_install = "bank_api_integration.bank_api_integration.doctype.bank_api_integration.bank_api_integration.create_defaults"
-
+after_migrate = "bank_api_integration.after_migrate.after_migrate"
 # Desk Notifications
 # ------------------
 # See frappe.core.notifications.get_notification_config
@@ -91,13 +91,11 @@ after_install = "bank_api_integration.bank_api_integration.doctype.bank_api_inte
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-#	}
-# }
+doc_events = {
+	"Outward Bank Payment": {
+		"autoname": "bank_api_integration.naming_series.name_outward_bank_payment"
+	}
+}
 
 # Scheduled Tasks
 # ---------------
@@ -109,7 +107,10 @@ scheduler_events = {
 		"bank_api_integration.bank_api_integration.doctype.bank_api_integration.bank_api_integration.fetch_balance",
 		"bank_api_integration.bank_api_integration.doctype.bank_api_integration.bank_api_integration.fetch_account_statement"
 		]
-	}
+	},
+	"daily" : [
+		"bank_api_integration.bank_api_integration.doctype.bank_api_request_log.bank_api_request_log.delete_older_logs"
+	]
 }
 # 	"all": [
 # 		"bank_api_integration.tasks.all"
@@ -151,7 +152,8 @@ scheduler_events = {
 #
 # auto_cancel_exempted_doctypes = ["Auto Repeat"]
 doctype_js = {
-    "Bank Account": "bank_api_integration/utils/js/bank_account.js",
-	"Purchase Invoice" : "bank_api_integration/custom/js/purchase_invoice.js",
-	"Purchase Order" : "bank_api_integration/custom/js/purchase_order.js"
+	"Bank Account": "bank_api_integration/customization/bank_account/bank_account.js",
+	"Purchase Invoice" : "bank_api_integration/customization/purchase_invoice/purchase_invoice.js",
+	"Purchase Order" : "bank_api_integration/customization/purchase_order/purchase_order.js",
+	"Bank Transaction" : "bank_api_integration/customization/bank_transaction/bank_transaction.js"
 }
