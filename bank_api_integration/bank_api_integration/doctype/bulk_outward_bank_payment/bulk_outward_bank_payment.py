@@ -8,8 +8,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt
 from frappe.model.mapper import get_mapped_doc
-from frappe.core.page.background_jobs.background_jobs import get_info
-from frappe.utils.background_jobs import enqueue
+from frappe.utils.background_jobs import enqueue, is_job_enqueued
 from bank_api_integration.bank_api_integration.doctype.bank_api_integration.bank_api_integration import *
 class BulkOutwardBankPayment(Document):
 	def on_update(self):
@@ -52,8 +51,12 @@ class BulkOutwardBankPayment(Document):
 		self.no_of_payments = len(self.outward_bank_payment_details)
 
 	def bulk_create_obp_records(self):
-		enqueued_jobs = [d.get("job_name") for d in get_info()]
-		if self.name in enqueued_jobs:
+		# v16 removed frappe.core.page.background_jobs, whose get_info() this
+		# used to list every queued job and scan it for job_name. The modern
+		# equivalent is is_job_enqueued(), which asks RQ about one job id
+		# directly -- cheaper, and it does not depend on a UI page existing.
+		job_id = f"obp_record_creation::{self.name}"
+		if is_job_enqueued(job_id):
 			frappe.throw(
 				_("OBP record creation already in progress. Please wait for sometime.")
 			)
@@ -63,7 +66,7 @@ class BulkOutwardBankPayment(Document):
 				queue="default",
 				timeout=6000,
 				event="obp_record_creation",
-				job_name=self.name,
+				job_id=job_id,
 				doc = self
 			)
 			frappe.throw(
